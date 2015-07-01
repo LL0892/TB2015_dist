@@ -1,12 +1,23 @@
 'use strict';
 
 var mongoose = require('mongoose'),
-    Schema = mongoose.Schema;
+    Schema = mongoose.Schema,
+    Business = require('../business/business.model');
 
 /*
-* Schema
+* Schemas
 */
 
+// Schema Price (embedded in Prestation)
+var PriceSchema = new Schema({
+  categoryName: { type: String, default: 'Default price category' },
+  ageLowLimit: { type: Number, default: '1' },
+  ageHighLimit: { type: Number, default: '99' },
+  price: { type: Number, default: '1' },
+  gender: { type: String, enum: ['homme', 'femme', 'mixte'], default: 'mixte' }
+});
+
+// Schema Prestation
 var PrestationSchema = new Schema({
 	createdOn: { type: Date, default: Date.now },
 	updatedOn: { type: Date, default: Date.now },
@@ -16,36 +27,43 @@ var PrestationSchema = new Schema({
 	description: { type: String },
 	duration: { type: Number, required: true, default: '5' },
 
-	prestationOptions: { type: [Schema.Types.ObjectId], ref: 'option' },
+	prices: [PriceSchema],
 
-	price: {
-		categoryName: { type: String, required: true },
-		ageLowLimit: { type: Number, required: true, default: '1' },
-		ageHighLimit: { type: Number, required: true, default: '99' },
-		price: { type: Number, required: true, default: '1' },
-		gender: { type: String, required: true, enum: ['Homme', 'Femme']}
-	},
-	businessID: { type: Schema.Types.ObjectId, ref: 'option', required: true },
+	businessId: { type: Schema.Types.ObjectId, ref: 'business', required: true },
 	isActive: { type: Boolean, default: true }
 });
-
-module.exports = mongoose.model('Prestation', PrestationSchema);
 
 /*
 * Validation
 */
 
-// Validate existing businessID
+// Validate existing business
 PrestationSchema
-  .path('businessID')
+  .path('businessId')
   .validate(function(value, respond) {
     var self = this;
-    this.constructor.findOne({_id: value}, function (){
-      if (err) throw err;
-      if(err || !doc) {
+    Business.findOne({_id: value}, function (err, businessExists){
+      if(err) throw err;
+      if(!businessExists) {
         return respond(false);
-      } else {
-        return respond(true);
       }
+      respond(true);
     });
   }, 'Salon non existant.');
+
+/*
+* Pre-save hook
+*/
+PrestationSchema
+  .pre('save', function (next){
+    this.updatedOn = Date.now();
+    next();
+  });
+
+PrestationSchema
+  .pre('update', function (next){
+    this.updatedOn = Date.now();
+    next();
+  });
+
+module.exports = mongoose.model('Prestation', PrestationSchema);

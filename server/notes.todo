@@ -1,0 +1,66 @@
+Routes - Bug:
+ ✔ Notifications/sent @done (15-06-26 23:17)
+ ✔ Notifications/received @done (15-06-26 23:17)
+ ✔ Staffs/create @done (15-06-23 12:30)
+ ✔ Staffs/me @done (15-06-23 12:45)
+
+Routes - Implémentation:
+ ✘ users/myNotifs @cancelled (15-06-28 00:46)
+ secure with my userId
+ ✘ users/myRendezvous @cancelled (15-06-28 00:46)
+ secure with my userId
+ ☐ business/:id/clients
+ ✔ business/:id/staffs/:staffId securisé @done (15-06-26 23:19)
+ actuellement on peut obtenir tout les staff même ceux qui ne sont pas dans le business ou l'on travaille.
+ ✔ Extended notif receptor and security @done (15-06-28 15:15)
+ ajouter à la requête un paramètre sur le userId du receptor + add receptor name sur le model
+ ☐ Affilier Staff à Schedule
+
+Plugins à tester:
+ ☐ Async.js or Highland.js -> callback-based
+ ☐ Q or BlueBird -> promise-based
+ ☐ node-time
+ ☐ mongoose-types-ext
+ ☐ validator.js
+ ☐ Pagination et headers (mongoose-paginate & express-paginate)
+ ✔ Find a two-way mongodb-id converter for short version in client display @done (15-06-23 10:08)
+ Trouvé : mongodb-short-id
+
+Implémentation:
+ ✔ Faire un tri sur le businessId dans les select de toutes les routes  @done (15-06-26 23:16)
+ Cela afin de protéger de la modification d'un objet qui n'a pas initialement besoin du businessId.
+ ✔ Ajouter le profil staff à chaque requête quand existant @done (15-06-23 10:08)
+ ✔ Erreurs 500 controllées sur les if(err) return next(err) @done (15-06-26 20:50)
+ ✘ CreatedOn & UpdatedOn cachée des select GET (select: false dans models) @cancelled (15-06-25 16:12)
+ Peut se régler avec les Virtuals
+ ☐ Validation que les valeurs sont pas vides ou trop courte
+ ☐ Validation sur les emails, les numéros de téléphones des business + staffs + user
+ ☐ Validation sur le nombre de caractères des descriptions & short descriptions
+ ✔ Sécuriser la création d'un business si déjà fait @done (15-06-23 16:40)
+ ✔ Sécuriser la création d'un staff si déjà fait @done (15-06-23 13:40)
+ ✘ Fix les res.json avec un wrapper @cancelled (15-06-25 16:08)
+ ✘ Faire des virtuals publics et privées pour les données sensibles @cancelled (15-06-26 20:50)
+ Par exemple : public user profile, private user profile, staff, business. Faire également des virtual sur les objets prestations, schedule, rendez-vous et notifications en retirant les dates de création/modification.
+ ✔ Faire un wrapper json pour la réponse de user/me (user[+staff+notifs] dans la réponse sous la forme d'un seul objet json) @done (15-06-28 15:16)
+ ✔ Ne pas permettre de changer le status d'une notif déjà processed @done (15-06-24 12:04)
+ ✔ Ajouter le rôle staff lorsque la notif est accepté @done (15-06-24 15:08)
+ ✔ Seulement permettre d'ajouter des données au business de son profil Staff et pas selon le routeParam du business @done (15-06-25 16:07)
+ ✔ Faire une fonction de vérification du businessId (staff) lors des requêtes sur son business @done (15-06-25 16:07)
+ ☐ Créer une validation du businessId de la création de staff avec un match sur un businessId d'une notification existante et acceptée.
+ actuellement va chercher le businessId dans la request body, trop risqué /!\
+
+Priorité basse:
+   ☐ Delete staff (liste staff + inactif + horaires affiliés) -> ne supprimera pas le profil car il cassera les liens des anciens rendez-vous sur celui-ci, par contre enlever les références sur l'objet user et le rôle
+   ☐ Delete prestation
+   ☐ Delete rendezvous
+   ☐ Move rendezvous
+   ☐ Retirer un staff non actif de la liste staffs dans business ou alors retirer staff visibility
+   Optimisation du système actuel qui ne retire pas le staff, mais change une variable qui est publiquement visible par tous. Soit retirer ce système au profit de la suppression de la liste ou ne pas l'inclure et rester à l'idée de base.
+   ☐ Changer le nom du business dans la notif si celui-ci change dans l'object Business
+   ☐ Lors du changement du nom du staff, le changer aussi dans la liste staffs du business
+   ✘ Valider duration (prestation et prestationRdv) @cancelled (15-06-28 15:20)
+   nombre entier multiple de 5
+   ☐ Si le status n'est pas 'reservé', ne pas permettre le changement de status d'un rendez-vous
+   ☐ Gérer les 404 sur les delete nom implémentés (501)
+   ☐ Créer un virtual date d'envoie pour les notification avec la valeur de la date de créationb
+

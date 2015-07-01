@@ -1,98 +1,152 @@
 /**
  * Using Rails-like standard naming convention for endpoints.
- * POST    /staff              ->  create
- * GET     /staff/:id          ->  show
+ * POST    /staffs              ->  create
+ * GET     /staffs/me           ->  me
+ * PUT	   /staffs/me 			->	update
+ * GET     /staffs/:id          ->  show
  */
+
 'use strict';
 
 var Staff = require('./staff.model');
 var User = require('../user/user.model');
-//var Business = require('../business/business.model');
+var Business = require('../business/business.model');
+var mongoose = require('mongoose');
+
 
 /*
-* Get a list of staff from that business
-* restriction : 'manager'
-*/
-// TODO
-
-/*
-* Get a single staff profile
-*/
-exports.show = function(req, res){
-	Staff.findById(req.params.id, function (err, staff){
-		if(err) { return handleError(res, err); }
-		if(!thing) { return res.send(404); }
-		return res.json(200, staff);
-	})
-}
-
-/*
+* POST    /staffs
 * Create a new Staff
-* restriction: 'staff' if not existant profile
-* steps:
-* 1. find if not existing staff
-* 1.1 save staff
-* 2. modifier user
+* restriction: 'staff'
 */
 exports.create = function (req, res, next) {
-	var staffID = '';
-	var userID = req.body.userID;
+	var userId = req.user._id;
 
-	// Step 1 + 1.1
-	User
-		.find({ _id: userID })
-		.where({ staff: {'$eq': null} })
-		.exec(function (err, staffFound){
-			if(err) return next(err);
+	User.findById(userId, function(err, userFound){
+		if(err) return res.send(500, err);
+		if(!userFound) return res.status(404).json({ message : 'Cet utilisateur n\'existe pas.' });
 
-			if (staffFound.length == 0) {
-				// Create a new staff
-				var newStaff = new User({
-				  	name: req.body.name,
-				  	staffContact: {
-				  		phone: req.body.phone,
-				  		mobile: req.body.mobile,
-				  		email: req.body.email
-				  	},
-				  	photoStaffURL: req.body.photoStaffURL,
-				  	businessID: req.body.businessID
+		// If no staff profile already created
+		if(userFound.staffId === undefined){
+			
+			var newStaff = new Staff({
+				name: req.body.name,
+				staffContact: {
+					phone: req.body.phone,
+					mobile: req.body.mobile,
+					email: req.body.email
+				},
+				photoStaffURL: req.body.photoStaffURL,
+				businessId: req.body.businessId,
+				isActive: false
+			});
+
+			// Check business is existant
+			Business.findById(req.body.businessId, function (err, businessFound){
+				if(err) return res.send(500, err);
+				if (!businessFound) { 
+					return res.status(404).json({
+						message: 'Le salon de coiffure demandé est introuvable.'
+					}).end(); 
+				} else {
+					businessFound.staffs.push({
+						staffName : newStaff.name,
+						staffId : newStaff._id,
+						staffVisibility : newStaff.isActive
+					});
+
+					businessFound.save(function (err, businessUpdated){
+						if(err) return res.send(500, err);
+					});
+				}
+			});
+
+			// Create the staff
+			newStaff.save(function (err, staffSaved){
+				if(err) return res.send(500, err);
+				
+				// Update User
+				userFound.staffId = staffSaved._id;
+				userFound.businessId = req.body.businessId;
+
+				userFound.save(function (err, userUpdated){
+					if(err) return res.send(500, err);
+
+					return res.status(201).json({
+						message : 'Votre profil staff a été crée avec succès.'
+					}).end();
 				});
-				newStaff.save(function(err, staffSaved){
-					if(err) return next(err);
-					staffID = staffSaved._id;
-					//res.status(201).json(convertStaff(staffSaved)).end();
-				});
-			} else {
-				res.status(422).json({ message: 'Profil de staff déjà existant.' });
-			}
+			});
 
-		});
-
-	// Step 2
-	User.findById({ _id: userID }), function (err, user){
-		if(err) return next(err);
-		user.staff = staffID;
-		user.save(function (err, userSaved){
-			if (err) return next(err);
-			res.status(201).json().end();
-		});
-	};
+		} else {
+			return res.status(403).json({
+				message : 'Vous avez déjà crée un profil staff.'
+			}).end();
+		}
+	});
 };
 
-function convertStaff(staff){
-	return {
-		id: staff.id,
-		name: staff.name,
-	  	staffContact: {
-	  		phone: staff.phone,
-	  		mobile: staff.mobile,
-	  		email: staff.email
-	  	},
-		photoStaffURL: staff.photoStaffURL,
-		businessID: staff.businessID
-	}
-}
+/*
+* GET     /staffs/me
+* Get my staff profile
+* restriction: 'staff'
+*/
+exports.me = function(req, res, next){
+	var staffId = req.user.staffId;
 
-function handleError(res, err) {
-  return res.send(500, err);
-}
+	Staff.findById(staffId, function (err, staffFound){
+		if(err) return res.send(500, err);
+		if(!staffFound) return res.status(404).json({ message : 'Vous n\'avez pas de profil staff existant.' });
+		return res.status(200).json({
+			staff : staffFound.profilePrivate
+		}).end();
+	});
+};
+
+/*
+* PUT     /staffs/me
+* Update my staff profile
+* restriction : 'staff'
+*/
+exports.update = function (req, res, next){
+	var staffId = req.user.staffId;
+
+	Staff.findOne(staffId, function (err, staffFound){
+		if(err) return res.send(500, err);
+		if(!staffFound) return res.status(404).json({
+			message : 'ce profil staff n\'existe pas.'
+		});
+
+		staffFound.name = String(req.body.name);
+		staffFound.photoStaffURL = String(req.body.photoStaffURL);
+		staffFound.staffContact.email = String(req.body.email);
+		staffFound.staffContact.phone = String(req.body.phone);
+		staffFound.staffContact.mobile = String(req.body.mobile);
+		staffFound.businessId = staffFound.businessId;
+		staffFound.isActive = staffFound.isActive;
+
+		staffFound.save(function (err, staffUpdated){
+			if(err) return res.send(500, err);
+			return res.status(200).json({
+				message : 'Votre profil staff a été correctement modifié.',
+				staff: staffUpdated
+			});
+		});
+	});
+};
+
+/*
+* GET     /staffs/:id
+* Get a single staff profile
+*/
+exports.show = function(req, res, next){
+	var staffId = req.params.id;
+
+	Staff.findById(staffId, function (err, staffFound){
+		if(err) return res.send(500, err);
+		if(!staffFound) return res.status(404).json({ message : 'Ce staff n\'existe pas.' });
+		return res.status(200).json({
+			staff : staffFound.profilePublic
+		}).end();
+	})
+};

@@ -1,39 +1,89 @@
 'use strict';
 
 var mongoose = require('mongoose'),
-    Schema = mongoose.Schema;
+    Schema = mongoose.Schema,
+    Business = require('../business/business.model');
 
-var ManagerSchema = new Schema({
+var StaffSchema = new Schema({
   createdOn: { type: Date, default: Date.now },
   updatedOn: { type: Date, default: Date.now },
 
   name: { type: String, required: true },
   staffContact: {
-    phone: { type : String, default: '' },
-    mobile: { type : Number, default: '' },
+    phone: { type: String, default: '' },
+    mobile: { type: String, default: '' },
     email: { type: String, lowercase: true, default: '' }
   },
-  photoStaffURL: { type : String, default : 'staffProfile.png' },
-  businessID: { type: Schema.Types.ObjectId, ref: 'business', required: true }
+  photoStaffURL: { type: String, default: 'staffProfile.png' },
+  businessId: { type: Schema.Types.ObjectId, ref: 'business', required: true },
+  isActive: { type: Boolean, default: false }
 });
 
-module.exports = mongoose.model('Manager', ManagerSchema);
+/**
+ * Virtuals
+ */
+
+// Private profile information
+StaffSchema
+  .virtual('profilePrivate')
+  .get(function() {
+    return {
+      '_id': this._id,
+      'name': this.name,
+      'email': this.staffContact.email,
+      'phone': this.staffContact.phone,
+      'mobile': this.staffContact.mobile,
+      'imageProfileUrl': this.photoStaffURL,
+      'active': this.isActive,
+      'businessId': this.businessId
+    };
+  });
+
+// Public profile information
+StaffSchema
+  .virtual('profilePublic')
+  .get(function() {
+    return {
+      '_id': this._id,
+      'name': this.name,
+      'email': this.staffContact.email,
+      'phone': this.staffContact.phone,
+      'mobile': this.staffContact.mobile,
+      'imageProfileUrl': this.photoStaffURL
+    };
+  });
 
 /*
 * Validation
 */
 
-// Validate existing busines ID
-ManagerSchema
-  .path('businessID')
+// Validate existing business
+StaffSchema
+  .path('businessId')
   .validate(function(value, respond) {
     var self = this;
-    this.constructor.findOne({_id: value}, function (){
-      if (err) throw err;
-      if(err || !doc) {
+    Business.findOne({_id: value}, function (err, businessExists){
+      if(err) throw err;
+      if(!businessExists) {
         return respond(false);
-      } else {
-        return respond(true);
       }
+      respond(true);
     });
-  }, 'Business non existant.');
+  }, 'Salon non existant.');
+
+/*
+* Pre-save hook
+*/
+StaffSchema
+  .pre('save', function (next){
+    this.updatedOn = Date.now();
+    next();
+  });
+
+StaffSchema
+  .pre('update', function (next){
+    this.updatedOn = Date.now();
+    next();
+  });
+
+module.exports = mongoose.model('Staff', StaffSchema);

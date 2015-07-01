@@ -1,39 +1,69 @@
 'use strict';
 
 var mongoose = require('mongoose'),
-    Schema = mongoose.Schema;
+    Schema = mongoose.Schema,
+    User = require('../user/user.model');
 
 /*
-* Schema
+* Schema Schedule
 */
 
-// Schedule Schema
 var ScheduleSchema = new Schema({
   createdOn: { type: Date, default: Date.now },
   updatedOn: { type: Date, default: Date.now },
 
-  // businessID is not stored inside this object, because Schedule is part of a business anyways.
   dayName: { type: String, required: true, enum: ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi','samedi', 'dimanche'] },
-  dayID: { type: Number, required: true, enum: ['0', '1', '2', '3', '4', '5', '6', '7'] },
-  startHour: { type: Number, required: true },
-  endHour: { type: Number, required: true },
+  dayId: { type: Number, required: true, enum: ['0', '1', '2', '3', '4', '5', '6'] },
+  startHour: { type: String },
+  endHour: { type: String },
   description: { type: String },
-  affiliatedStaff: { type: [Schema.Types.ObjectId], ref: 'user' }
+  workingDay: { type: Boolean, default: true },
+  staffs: [
+    { 
+      staffId : { type: Schema.Types.ObjectId, ref: 'staff' },
+      staffName : { type: String }
+    }
+  ]
 });
 
-// Business Schema
+/**
+ * Virtuals for schedule
+ */
+
+// Public schedule information
+ScheduleSchema
+  .virtual('profile')
+  .get(function() {
+    return {
+      '_id': this._id,
+      'dayName': this.dayName,
+      'startHour': this.startHour,
+      'endHour': this.endHour,
+      'workingDay': this.workingDay,
+      'description': this.description,
+      'affiliatedStaff': this.affiliatedStaff
+    };
+  });
+
+/*
+* Schema Business
+*/
+
 var BusinessSchema = new Schema({
   createdOn: { type: Date, default: Date.now },
   updatedOn: { type: Date, default: Date.now },
 
   name: { type: String, required: true },
   imageBusinessURL : { type: String, default: 'businessLogo.png' },
+
   businessContact: {
     email: { type: String, default: ''},
+    mobile: { type: String, default: '' },
     phone: { type: String, default: '' },
     siteURL: { type: String, default: '' },
     facebookURL : { type: String, default: '' }
   },
+
   city: { type: String, required: true },
   street: { type: String, default: '' },
   canton: { type: String, default: '' },
@@ -41,35 +71,63 @@ var BusinessSchema = new Schema({
   isActive: { type: Boolean, default: false },
 
   founder: { type: Schema.Types.ObjectId, ref: 'user', required: true },
-  staffs: { type: [Schema.Types.ObjectId], ref: 'user' },
-  schedules: [ ScheduleSchema ],
-  //prestations: { type: Schema.Types.ObjectId, ref: 'prestation' },
+  staffs: [
+    {
+      staffName : { type: String },
+      staffId : { type: Schema.Types.ObjectId, ref: 'staff' },
+      staffVisibility : { type: Boolean, default: true }
+    }
+   ],
 
-  // Ratting d'un business
-  ratting: {
+  schedules: [ ScheduleSchema ]
+/*  ratting: {
     nbVotes: { type: Number, default: '0' },
     nbStars: { type: Number, default: '0' }
-  } 
+  } */
 });
 
-module.exports = mongoose.model('Schedule', ScheduleSchema);
-module.exports = mongoose.model('Business', BusinessSchema);
+BusinessSchema.set('toJSON', { getters: true });
+BusinessSchema.set('toObject', { getters: true });
+
+/**
+ * Virtuals for business
+ */
+
+// Public business information
+BusinessSchema
+  .virtual('profile')
+  .get(function() {
+    return {
+      '_id': this._id,
+      'name': this.name,
+      'city': this.city,
+      'zip': this.zip,
+      'canton': this.canton,
+      'street': this.street,
+      'email': this.businessContact.email,
+      'phone': this.businessContact.phone,
+      'mobile': this.businessContact.mobile,
+      'site': this.businessContact.siteURL,
+      'facebook': this.businessContact.facebookURL,
+      'imageBusinessUrl': this.imageBusinessURL,
+      'schedules': this.schedules,
+      'isActive': this.isActive
+    };
+  });
 
 /*
-* Validation
+* Pre-save hook
 */
-
-// Validate existing business ID
 BusinessSchema
-  .path('founder')
-  .validate(function(value, respond) {
-    var self = this;
-    this.constructor.findOne({_id: value}, function (){
-      if (err) throw err;
-      if(err || !doc) {
-        return respond(false);
-      } else {
-        return respond(true);
-      }
-    });
-  }, 'Utilisateur non existant.');
+  .pre('save', function (next){
+    this.updatedOn = Date.now();
+    next();
+  });
+
+BusinessSchema
+  .pre('update', function (next){
+    this.updatedOn = Date.now();
+    next();
+  });
+
+module.exports = mongoose.model('Business', BusinessSchema);

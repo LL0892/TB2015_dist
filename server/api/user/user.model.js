@@ -4,15 +4,18 @@ var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 var crypto = require('crypto');
 var authTypes = ['github', 'twitter', 'facebook', 'google'];
+var Staff = require('../staff/staff.model');
+var Business = require('../business/business.model');
 
 // User Schema
 var UserSchema = new Schema({
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
   email: { type: String, required: true, lowercase: true },
-  dateOfBirth: { type: Date, required: false },
+  dateOfBirth: { type: Date, required: true },
+  gender: { type: String, enum: ['homme', 'femme'], required: true },
   
-  roles: { type: [String], default: 'user', enum: ['user', 'staff', 'founder', 'admin'] },
+  roles: { type: [String], default: 'user', enum: ['user', 'staff', 'manager', 'admin'] },
   hashedPassword: String,
   provider: String,
   salt: String,
@@ -23,21 +26,27 @@ var UserSchema = new Schema({
   createdOn: { type: Date, default: Date.now },
   updatedOn: { type: Date, default: Date.now },
 
-  staff: { type: Schema.Types.ObjectId, ref: 'staff'},
+  staffId: { type: Schema.Types.ObjectId, ref: 'staff'},
+  businessId: { type: Schema.Types.ObjectId, ref: 'business'},
   phone: { type : String, default: '' },
   mobile: { type : String, default: '' },
   city: { type : String, default: '' },
   street: { type : String, default: '' },
   canton: { type : String, default: '' },
   zip: { type : Number, default: '' },
-  photoProfileURL: { type : String, default : 'userProfile.png' },
+  imageProfileURL: { type : String, default : 'userProfile.png' },
   
-  stats: {
+/*  stats: {
     nbRdvDone: { type: Number, default: '0' },
     nbRdvMissed: { type: Number, default: '0' },
     nbRdvCancelled: { type: Number, default: '0' },
     nbRdvMoved: { type: Number, default: '0' },
     lastRdv: { type: Date }
+  },*/
+
+  preferences: {
+    homeDisplay: { type: String, enum: ['list', 'fav', 'dual'], default: 'list' },
+    favorite : { type: Schema.Types.ObjectId, ref: 'business' }
   }
 });
 
@@ -57,12 +66,64 @@ UserSchema
 
 // Public profile information
 UserSchema
-  .virtual('profile')
+  .virtual('profilePublic')
   .get(function() {
     return {
-      'name': this.name,
-      'role': this.role
+      '_id': this._id,
+      'name': this.fullname,
+      'email': this.email,
+      'age': this.age,
+      'gender': this.gender,
+      'phone': this.phone,
+      'mobile': this.mobile,
+      'city': this.city,
+      'street': this.street,
+      'canton': this.canton,
+      'zip': this.zip,
+      'imageProfileUrl': this.imageProfileURL,
     };
+  });
+
+// Private profile information
+UserSchema
+  .virtual('profilePrivate')
+  .get(function() {
+    return {
+      '_id': this._id,
+      'name': this.fullname,
+      'email': this.email,
+      'age': this.age,
+      'gender': this.gender,
+      'phone': this.phone,
+      'mobile': this.mobile,
+      'city': this.city,
+      'street': this.street,
+      'canton': this.canton,
+      'zip': this.zip,
+      'imageProfileUrl': this.imageProfileURL,
+      'roles': this.roles,
+      'businessId': this.businessId,
+      'preferences': this.preferences
+    };
+  });
+
+
+// User fullname
+UserSchema
+  .virtual('fullname')
+  .get(function(){
+    return this.firstName + ' ' + this.lastName;
+  });
+
+// User age
+UserSchema
+  .virtual('age')
+  .get(function(){
+    var birth = this.dateOfBirth,
+        now = new Date();
+    var age = ((now - birth) / 31536000000).toFixed(1);
+    age = Math.floor(age);
+    return age;
   });
 
 // Non-sensitive info we'll be putting in the token
@@ -71,7 +132,7 @@ UserSchema
   .get(function() {
     return {
       '_id': this._id,
-      'role': this.role
+      'roles': this.roles
     };
   });
 
@@ -110,37 +171,58 @@ UserSchema
     });
 }, 'The specified email address is already in use.');
 
-// Validate existing Staff Profile ID
-UserSchema
-  .path('staff')
-  .validate(function(value, respond) {
-    var self = this;
-    this.constructor.findOne({_id: value}, function (){
-      if (err) throw err;
-      if(err || !doc) {
-        return respond(false);
-      } else {
-        return respond(true);
-      }
-    });
-  }, 'Staff non existant.');
-
 
 var validatePresenceOf = function(value) {
   return value && value.length;
 };
+
+// Validate staff exist
+UserSchema
+  .path('staffId')
+  .validate(function(value, respond) {
+    var self = this;
+    Staff.findOne({_id: value}, function (err, staffExists){
+      if(err) throw err;
+      if(!staffExists) {
+        return respond(false);
+      }
+      respond(true);
+    });
+  }, 'Staff non existant.');
+
+// Validate business exist
+UserSchema
+  .path('businessId')
+  .validate(function(value, respond) {
+    var self = this;
+    Business.findOne({_id: value}, function (err, businessExists){
+      if(err) throw err;
+      if(!businessExists) {
+        return respond(false);
+      }
+      respond(true);
+    });
+  }, 'Salon non existant.');
 
 /**
  * Pre-save hook
  */
 UserSchema
   .pre('save', function(next) {
+    this.updatedOn = Date.now();
+    
     if (!this.isNew) return next();
 
     if (!validatePresenceOf(this.hashedPassword) && authTypes.indexOf(this.provider) === -1)
       next(new Error('Invalid password'));
     else
       next();
+  });
+
+UserSchema
+  .pre('update', function (next){
+    this.updatedOn = Date.now();
+    next();
   });
 
 /**
