@@ -1,3 +1,6 @@
+UI - Bug:
+ ☐ business.createPrestation dans newPrestation
+
 Routes - Bug:
  ✔ Notifications/sent @done (15-06-26 23:17)
  ✔ Notifications/received @done (15-06-26 23:17)

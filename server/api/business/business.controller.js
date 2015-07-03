@@ -73,7 +73,7 @@ var Business = require('./business.model'),
 * Get a list of business
 */
  exports.getBusinesses = function(req, res, next){
- 	Business.find({ isActive: true }, function (err, businessesFound){
+ 	Business.find({}, function (err, businessesFound){
  		if(err) return res.send(500, err);
  		if(businessesFound.length <= 0) return res.status(404).json({ message : 'Il n\'y a pas de salons à afficher.' });
  		
@@ -128,7 +128,7 @@ var Business = require('./business.model'),
 			    imageBusinessURL: req.body.imageBusinessURL
 		 	});
 		 	newBusiness.founder = req.user._id;
-		  	newBusiness.isActive = false;
+		  	//newBusiness.isActive = false;
 
 		  	// Default Schedules
 		  	newBusiness.schedules.push(
@@ -262,6 +262,7 @@ var Business = require('./business.model'),
  /**
  * PUT	/businesses/:id/status
  * Change the business status
+ * REMOVED FROM UI
  * restriction : 'staff'
  */
  exports.statusBusiness = function(req, res, next){
@@ -332,7 +333,7 @@ exports.addSchedule = function(req, res, next){
 			description: req.body.description,
 			workingDay: req.body.workingDay
 		});
-		console.log(businessFound.schedules);
+		//console.log(businessFound.schedules);
 
 		businessFound.save(function (err, businessUpdated){
 			if(err) return res.send(500, err);
@@ -476,6 +477,7 @@ exports.showStaff = function(req, res, next){
 /**
 * PUT	/businesses/:id/staffs/:staffId/status
 * Update a staff status for this business
+* REMOVED FROM UI
 * restriction : 'staff'
 */
 exports.statusStaff = function(req, res, next){
@@ -574,6 +576,7 @@ exports.getPrestations = function(req, res, next){
 /**
 * POST 	/businesses/:id/prestations
 * Create a prestation for this business
+* REMOVED FROM UI
 * restriction : 'staff'
 */
 exports.createPrestation = function(req, res, next){
@@ -647,6 +650,7 @@ exports.updatePrestation = function(req, res, next){
 /**
 * PUT 	/businesses/:id/prestations/:prestationId/status
 * Change the prestation status for this business
+* REMOVED FROM UI
 * restriction : 'staff'
 */
 exports.statusPrestation = function(req, res, next){
@@ -700,7 +704,7 @@ exports.createPrice = function(req, res, next){
 		if (!prestationFound) return res.status(404).json({ message : 'Prestation non existante.' });
 
 		prestationFound.prices.push({
-		  	categoryName: req.body.name,
+		  	categoryName: req.body.categoryName,
 		  	ageLowLimit: req.body.ageLowLimit,
 		  	ageHighLimit: req.body.ageHighLimit,
 		  	price: req.body.price,
@@ -965,6 +969,7 @@ exports.showRendezvous = function(req, res, next){
 * PUT 	/businesses/:id/rendezvous/:rdvId/missed
 * Update the rendezvous status to 'manqué' for this business
 * restriction : 'staff'
+* REMOVED FROM UI
 */
 exports.rendezvousMissed = function(req, res, next){
 	var businessId = req.staff.businessId,
@@ -995,6 +1000,7 @@ exports.rendezvousMissed = function(req, res, next){
 * PUT 	/businesses/:id/rendezvous/:rdvId/finished
 * Update the rendezvous status to 'terminé' for this business
 * restriction : 'staff'
+* REMOVED FROM UI
 */
 exports.rendezvousFinished = function(req, res, next){
 	var businessId = req.staff.businessId,
@@ -1025,6 +1031,7 @@ exports.rendezvousFinished = function(req, res, next){
 * PUT 	/businesses/:id/rendezvous/:rdvId/cancelled
 * Update the rendezvous status to 'annulé' for this business
 * restriction : 'staff'
+* REMOVED FROM UI
 */
 exports.rendezvousCancelled = function(req, res, next){
 	var businessId = req.staff.businessId,
@@ -1048,6 +1055,7 @@ exports.rendezvousCancelled = function(req, res, next){
 * PUT 	/businesses/:id/rendezvous/:rdvId/move
 * Update the rendezvous date & status to 'déplacé' for this business
 * restriction : 'staff'
+* REMOVED FROM UI
 */
 exports.moveRendezvous = function(req, res, next){
 	return res.status(501).json({ message : 'Fonction non implémentée.'}).end();
@@ -1057,6 +1065,7 @@ exports.moveRendezvous = function(req, res, next){
 * DELETE 	/businesses/:id/rendezvous/:rdvId
 * Delete a rendezvous for this business
 * restriction : 'staff'
+* REMOVED FROM UI
 */
 exports.deleteRendevous = function(req, res, next){
 	return res.status(501).json({ message : 'Fonction non implémentée.'}).end();
