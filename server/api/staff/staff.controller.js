@@ -1,15 +1,17 @@
 /**
  * Using Rails-like standard naming convention for endpoints.
- * POST    /staffs              ->  create
- * GET     /staffs/me           ->  me
- * PUT	   /staffs/me 			->	update
- * GET     /staffs/:id          ->  show
+ * POST    /staffs              	->  create
+ * GET     /staffs/me           	->  me
+ * PUT	   /staffs/me 				->	update
+ * GET     /staffs/:id          	->  show
+ * GET     /staffs/:id/rendezvous   ->  rendezvous
  */
 
 'use strict';
 
 var Staff = require('./staff.model');
 var User = require('../user/user.model');
+var Rendezvous = require('../rendezvous/rendezvous.model');
 var Business = require('../business/business.model');
 var mongoose = require('mongoose');
 
@@ -21,6 +23,9 @@ var mongoose = require('mongoose');
 */
 exports.create = function (req, res, next) {
 	var userId = req.user._id;
+	var businessId = req.user.businessId;
+	console.log(userId);
+	console.log(businessId);
 
 	User.findById(userId, function(err, userFound){
 		if(err) return res.send(500, err);
@@ -28,7 +33,7 @@ exports.create = function (req, res, next) {
 
 		// If no staff profile already created
 		if(userFound.staffId === undefined){
-			
+
 			var newStaff = new Staff({
 				name: req.body.name,
 				staffContact: {
@@ -37,21 +42,22 @@ exports.create = function (req, res, next) {
 					email: req.body.email
 				},
 				photoStaffURL: req.body.photoStaffURL,
-				businessId: req.body.businessId,
+				businessId: businessId
 			});
 
 			// Check business is existant
-			Business.findById(req.body.businessId, function (err, businessFound){
+			Business.findOne({'_id': businessId}, function (err, businessFound){
+				
 				if(err) return res.send(500, err);
 				if (!businessFound) { 
 					return res.status(404).json({
 						message: 'Le salon de coiffure demandé est introuvable.'
 					}).end(); 
 				} else {
+					
 					businessFound.staffs.push({
 						staffName : newStaff.name,
-						staffId : newStaff._id,
-						staffVisibility : newStaff.isActive
+						staffId : newStaff._id
 					});
 
 					businessFound.save(function (err, businessUpdated){
@@ -66,7 +72,7 @@ exports.create = function (req, res, next) {
 				
 				// Update User
 				userFound.staffId = staffSaved._id;
-				userFound.businessId = req.body.businessId;
+				userFound.businessId = businessId;
 
 				userFound.save(function (err, userUpdated){
 					if(err) return res.send(500, err);
@@ -147,4 +153,19 @@ exports.show = function(req, res, next){
 			staff : staffFound.profilePublic
 		}).end();
 	})
+};
+
+/*
+* GET     /staffs/:id/rendezvous
+* Get a list of rendezvous for this staff
+* route publique
+*/
+exports.rendezvous = function(req, res, next){
+	var staffId = req.params.id;
+
+	Rendezvous.find({'staff.staffId': staffId}, '-createdOn -updatedOn -client -prestation', function(err, rendezvousFound){
+		if(err) return res.send(500, err);
+		//if(rendezvousFound.length <= 0) return res.status(404).json({ message : 'Il n\'y a pas de rendez-vous pour ce staff à afficher.' });
+		return res.status(200).json(rendezvousFound).end();
+	});
 };

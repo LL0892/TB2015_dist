@@ -27,14 +27,19 @@ var validationError = function(res, err) {
 
 /**
  * Get list of users
- * restriction: 'admin'
+ * restriction: 'staff'
  */
 exports.index = function(req, res) {
-  User.find({}, '-salt -hashedPassword', function (err, users) {
+  User.find({}, '-salt -hashedPassword -roles -createdOn -updatedOn', function (err, users) {
+
+    for (var i = users.length - 1; i >= 0; i--) {
+      users[i] = users[i].profilePublic;
+    }
+
     if(err) return res.send(500, err);
-    return res.status(200).json({
-      utilisateurs : users.profilePublic
-    }).end();
+    return res.status(200).json(
+      users
+    ).end();
   });
 };
 
@@ -67,8 +72,8 @@ exports.update = function(req, res, next) {
     if(!userFound) return res.status(401).json({ message : 'Vous n\'êtes pas connecté.' }).end();
 
     // Update datas
-    userFound.firstName = req.body.firstName;
-    userFound.lastName = req.body.lastName;
+    //userFound.firstName = req.body.firstName;
+    //userFound.lastName = req.body.lastName;
     //userFound.dateOfBirth = req.body.dateOfBirth;
     //userFound.gender = req.body.gender;
     userFound.phone = req.body.phone;
@@ -127,8 +132,6 @@ exports.create = function (req, res, next) {
 * Create a new user with manager roles
 */
 exports.createManager = function (req, res, next){
-  var token = '';
-
   var newUser = new User({
     firstName: req.body.firstName,
     lastName: req.body.lastName,
@@ -149,11 +152,9 @@ exports.createManager = function (req, res, next){
     provider: 'local',
     roles: ['user', 'staff', 'manager']
   });
-  //newUser.provider = 'local';
-  //newUser.roles = ['user', 'staff', 'manager'];
   newUser.save(function(err, user) {
     if (err) return validationError(res, err);
-    token = jwt.sign({_id: user._id }, config.secrets.session, { expiresInMinutes: 60*15 });
+    var token = jwt.sign({_id: user._id }, config.secrets.session, { expiresInMinutes: 60*15 });
     return res.status(201).json({ token: token }).end();
   });
 };
@@ -229,6 +230,7 @@ exports.changeEmail = function(req, res, next) {
 
 /**
 * Update my home display preferences
+* PUT     /users/:id/prefDisplay   ->  preferenceDisplay
 * UNUSED IN UI
 */
 exports.preferenceDisplay = function(req, res, next) {
@@ -248,8 +250,8 @@ exports.preferenceDisplay = function(req, res, next) {
 };
 
 /**
-* Update my home display preferences
-* UNUSED IN UI
+* Update my home favorite business preferences
+* PUT     /users/:id/prefFavorite  ->  preferenceFavorite
 */
 exports.preferenceFavorite = function(req, res, next){
   var userId = req.user._id;

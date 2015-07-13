@@ -34,7 +34,7 @@ var UserSchema = new Schema({
   street: { type : String, default: '' },
   canton: { type : String, default: '' },
   zip: { type : Number, default: '' },
-  imageProfileURL: { type : String, default : 'userProfile.png' },
+  imageProfileURL: { type : String, default : 'userPlaceholder.png' },
   
 /*  stats: {
     nbRdvDone: { type: Number, default: '0' },
@@ -44,10 +44,10 @@ var UserSchema = new Schema({
     lastRdv: { type: Date }
   },*/
 
-/*  preferences: {
+  preferences: {
     homeDisplay: { type: String, enum: ['list', 'fav', 'dual'], default: 'list' },
     favorite : { type: Schema.Types.ObjectId, ref: 'business' }
-  }*/
+  }
 });
 
 /**
@@ -102,7 +102,8 @@ UserSchema
       'zip': this.zip,
       'imageProfileUrl': this.imageProfileURL,
       'roles': this.roles,
-      'businessId': this.businessId
+      'businessId': this.businessId,
+      'staffId': this.staffId
       //'preferences': this.preferences
     };
   });

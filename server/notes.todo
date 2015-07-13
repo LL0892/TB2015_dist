@@ -1,5 +1,6 @@
 UI - Bug:
  ☐ business.createPrestation dans newPrestation
+ ☐ refresh du scope lors de l'ajout d'une notif -> array buggé
 
 Routes - Bug:
  ✔ Notifications/sent @done (15-06-26 23:17)

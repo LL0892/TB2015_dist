@@ -31,7 +31,7 @@ var ScheduleSchema = new Schema({
  */
 
 // Public schedule information
-ScheduleSchema
+/*ScheduleSchema
   .virtual('profile')
   .get(function() {
     return {
@@ -41,9 +41,9 @@ ScheduleSchema
       'endHour': this.endHour,
       'workingDay': this.workingDay,
       'description': this.description,
-      'affiliatedStaff': this.affiliatedStaff
+      'staffs': this.staffs
     };
-  });
+  });*/
 
 /*
 * Schema Business
@@ -54,7 +54,7 @@ var BusinessSchema = new Schema({
   updatedOn: { type: Date, default: Date.now },
 
   name: { type: String, required: true },
-  imageBusinessURL : { type: String, default: 'businessLogo.png' },
+  imageBusinessURL : { type: String, default: 'businessPlaceholder.png' },
 
   businessContact: {
     email: { type: String, default: ''},
@@ -74,8 +74,8 @@ var BusinessSchema = new Schema({
   staffs: [
     {
       staffName : { type: String },
-      staffId : { type: Schema.Types.ObjectId, ref: 'staff' },
-      staffVisibility : { type: Boolean, default: true }
+      staffId : { type: Schema.Types.ObjectId, ref: 'staff' }
+      //staffVisibility : { type: Boolean, default: true }
     }
    ],
 
@@ -86,15 +86,15 @@ var BusinessSchema = new Schema({
   } */
 });
 
-BusinessSchema.set('toJSON', { getters: true });
-BusinessSchema.set('toObject', { getters: true });
+//BusinessSchema.set('toJSON', { getters: true });
+//BusinessSchema.set('toObject', { getters: true });
 
 /**
  * Virtuals for business
  */
 
 // Public business information
-BusinessSchema
+/*BusinessSchema
   .virtual('profile')
   .get(function() {
     return {
@@ -110,10 +110,9 @@ BusinessSchema
       'site': this.businessContact.siteURL,
       'facebook': this.businessContact.facebookURL,
       'imageBusinessUrl': this.imageBusinessURL,
-      'schedules': this.schedules,
-      'isActive': this.isActive
+      'schedules': this.schedules
     };
-  });
+  });*/
 
 /*
 * Pre-save hook
