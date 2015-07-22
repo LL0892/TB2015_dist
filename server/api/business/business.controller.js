@@ -49,9 +49,6 @@
 
  --- Test auth.hasAccess ---
  * GET  	/businesses/:id/test 		->  test
-
- --- Business Applicative Services ---
- * POST		/businesses/:id/overview	->  overview
  */
 
 'use strict';
@@ -533,7 +530,7 @@ exports.createPrestation = function(req, res, next){
 
  	newPrestation.prices.push({
 	  	categoryName: 'Prix par défaut',
-	  	ageLowLimit: 0,
+	  	ageLowLimit: 1,
 	  	ageHighLimit: 99,
 	  	price: 25,
 		gender: 'mixte'
@@ -690,7 +687,7 @@ exports.updatePrice = function(req, res, next){
 		if (!prestationFound) return res.status(404).json({ message : 'Prestation non existante.' });
 		if (!prestationFound.prices.id(priceId)) return res.status(404).json({ message : 'Prix demandé non existant.' });
 
-		prestationFound.prices.id(priceId).categoryName = req.body.name;
+		prestationFound.prices.id(priceId).categoryName = req.body.categoryName;
 		prestationFound.prices.id(priceId).ageLowLimit = req.body.ageLowLimit;
 		prestationFound.prices.id(priceId).ageHighLimit = req.body.ageHighLimit;
 		prestationFound.prices.id(priceId).price = req.body.price;
@@ -759,7 +756,6 @@ exports.getRendezvous = function(req, res, next){
 /**
 * POST 	/businesses/:id/rendezvous/search
 * Get a list of rendezvous for a staff member within a timeframe
-* restriction : 'staff'
 */
 exports.searchRendezvous = function(req, res, next){
 	var businessId = req.staff.businessId,
@@ -773,7 +769,6 @@ exports.searchRendezvous = function(req, res, next){
 		'startHour': {$gte: start, $lt: end}
 	}, '-__v -createdOn -updatedOn', function (err, rendezvousFound){
 		if(err) return res.send(500, err);
-		if (rendezvousFound.length <= 0) return res.status(404).json({ message : 'Il n\'y a pas de rendez-vous à afficher.' });
 
 		return res.status(200).json({ 
 			rendezvous: rendezvousFound
@@ -787,9 +782,9 @@ exports.searchRendezvous = function(req, res, next){
 * restriction : 'staff'
 */
 exports.createRendezvous = function(req, res, next){
-	var businessId = req.staff.businessId,
-		staffId = req.staff._id,
-		staffName = req.staff.name,
+	var businessId = req.params.id,
+		staffId = req.body.staffId,
+		staffName = req.body.staffName,
 		prestationId = req.body.prestationId,
 		userId = req.body.clientId;
 
@@ -1148,17 +1143,3 @@ exports.test = function(req, res, next){
 		message : 'Access Granted.'
 	});
 }
-
-
-
-// --- Business Applicative Service ------------
-
-/**
-* Get a set of data for this business
-*/
-exports.overview = function(req, res, next){
-	// GET Business (+ Schedules) datas
-	// GET Staffs
-	// GET Prestations (+ Prices)
-	// GET Rendezvous futurs sur période T
-};

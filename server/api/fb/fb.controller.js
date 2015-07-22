@@ -6,16 +6,15 @@
 'use strict';
 
 var Business = require('../business/business.model'),
-	User = require('../user/user.model');
-
-var SignedRequest = require('facebook-signed-request');
-SignedRequest.secret = '1435864036716003';
+	User = require('../user/user.model'),
+	SignedRequest = require('facebook-signed-request');
+	SignedRequest.secret = '1435864036716003';
 
 /**
  * Get the facebook POST request
  */
 exports.index = function(req, res) {
-	//	console.log(req.body.signed_request);
+	//console.log(req.body.signed_request);
 
 	var request = req.body.signed_request;
 	var signedRequest = new SignedRequest( request );
@@ -34,26 +33,45 @@ exports.index = function(req, res) {
 	  console.log(pageId);
 
 	  	if (pageId) {
-		Business.findOne({'fbPageId': pageId}, function(err, businessFound){
-	 		if(!businessFound){
-	 			return console.log('lier la page');
-	 			//var string = encodeURIComponent(pageId);
-	 			//res.status(301).redirect('https://directhaircut.ch/fb/login?pageId='+ string).end();
-	 		}
+			Business.findOne({'fbPageId': pageId}, function(err, businessFound){
+		 		if(err) return res.send(500, err);
+		 		if(!businessFound){
+		 			return console.log('lier la page');
+		 		}
 
-	 		if(err) return res.send(500, err);
+		 		// Otherwise render first app page
+		 		console.log('rdv dans ce salon');
+/*		 		res.render('fb', { business: businessFound }, function (err, html) {
+		 			//console.log(html);
+				  	return res.send(html);
+				});*/
 
-	 		console.log('réserver pour ce salon');
-			
+				var fileName = 'index.html';
+				var options = {
+				    root: '../../../public/',
+				    dotfiles: 'deny',
+				    headers: {
+				        //'x-timestamp': Date.now(),
+				        //'x-sent': true
+				        'x-page-id': pageId
+				    }
+				};
+				res.sendFile(fileName, options);
+/*
+				return res.status(200).json(
+			      'all ok'
+			    ).end();
+				*/
 			});
-			} else{
-				console.log('erreur de page id');
-			}
+		} 
+		else{
+			console.log('erreur de page id');
+		}
 		});
-
+/*
 	return res.status(200).json(
       'all ok'
-    ).end();
+    ).end();*/
 };
 
 /**
