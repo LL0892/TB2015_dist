@@ -23,12 +23,12 @@ router.put('/:id/schedules/:scheduleId', auth.hasAccess('staff'), controller.upd
 router.delete('/:id/schedules/:scheduleId', auth.hasAccess('staff'), controller.deleteSchedule);
 
 // --- Staffs routes ---
-router.get('/:id/staffs', auth.hasAccess('staff'), controller.getStaffs);
+router.get('/:id/staffs', auth.isAuthenticated(), controller.getStaffs);
 router.get('/:id/staffs/:staffId', auth.hasAccess('staff'), controller.showStaff);
 router.delete('/:id/staffs/:staffId', auth.hasAccess('staff'), controller.deleteStaff);
 
 // --- Prestations routes ---
-router.get('/:id/prestations', auth.hasAccess('staff'), controller.getPrestations);
+router.get('/:id/prestations', controller.getPrestations);
 router.post('/:id/prestations', auth.hasAccess('staff'), controller.createPrestation);
 router.get('/:id/prestations/:prestationId', auth.hasAccess('staff'), controller.showPrestation);
 router.put('/:id/prestations/:prestationId', auth.hasAccess('staff'), controller.updatePrestation);
